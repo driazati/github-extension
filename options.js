@@ -10,21 +10,25 @@ let properties = [
     name: "Sort signals",
     desc: "Sort GitHub CI signals by failed/pending/success/skipped",
     type: "checkbox",
+    default: true
   },
   {
     name: "Show build status",
     desc: "When viewing a list of PRs, show extra information about each (line count, diff, etc)",
     type: "checkbox",
+    default: true
   },
   {
     name: "Unminimize comments",
     desc: "Automatically unminimize all comments on PRs",
     type: "checkbox",
+    default: true
   },
   {
     name: "Disable pjax",
     desc: "Turn off GitHub's SPA features so links aren't stale (may increase load times)",
     type: "checkbox",
+    default: false
   },
 ];
 
