@@ -1,7 +1,13 @@
 featureFlag("Sort signals", () => {
   document.addEventListener("DOMContentLoaded", sortSignals);
   document.addEventListener("pjax:end", sortSignals);
-  setInterval(sortSignals, 500);
+  // setInterval(sortSignals, 500);
+  backoffInterval({
+    callback: sortSignals,
+    minWait: 10,
+    maxWait: 2000,
+    factor: 2,
+  });
 });
 
 function itemInfo(merge_status_item) {
@@ -29,9 +35,6 @@ function itemInfo(merge_status_item) {
 }
 
 function sortSignalsBox(parent) {
-  if (!parent.parentNode.children[1].innerText.includes("checks")) {
-    return;
-  }
   const elements = parent.querySelectorAll("div.merge-status-item");
   const buckets = {
     failed: [],
@@ -70,18 +73,32 @@ function sortSignalsBox(parent) {
     }
   }
 
+  let orderIsUnchanged = true;
+  Array.from(parent.children).forEach((value, index) => {
+    if (order[index].element !== value) {
+      orderIsUnchanged = false;
+    }
+  });
+
+  if (orderIsUnchanged) {
+    return false;
+  }
+
   for (let item of order) {
     parent.appendChild(item.element);
   }
+
+  return true;
 }
 
 function sortSignals() {
   // Sort signals by type, then alphabetically
+  let didAnything = false;
   document.querySelectorAll("div.merge-status-list").forEach((parent) => {
-    try {
-      sortSignalsBox(parent);
-    } catch (e) {
-      console.log(e);
+    if (!parent.parentNode.children[1].innerText.includes("checks")) {
+      return;
     }
+    didAnything = didAnything || sortSignalsBox(parent);
   });
+  return didAnything;
 }

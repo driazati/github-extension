@@ -1,2 +1,2 @@
 zip:
-	zip extension.zip icons/* *.js *.css manifest.json
+	git ls-files | grep -v 'images/' | xargs zip extension.zip

@@ -118,3 +118,24 @@ function featureFlag(name, callback) {
     }
   });
 }
+
+// Call callback() often when it returns true, less if it returns false
+function backoffInterval(args) {
+  function clamp(x) {
+    return +Math.min(Math.max(x, args.minWait), args.maxWait);
+  }
+
+  function check(wait) {
+    let newWait = args.maxWait;
+    if (args.callback()) {
+      newWait = clamp(wait / args.factor);
+    } else {
+      newWait = clamp(wait * args.factor);
+    }
+    setTimeout(() => {
+      check(newWait);
+    }, newWait);
+  }
+
+  check(args.minWait);
+}

@@ -2,7 +2,8 @@
 // a popover to a progress bar with red/yellow/green for failed/pending/success
 
 let GITHUB_OAUTH = undefined;
-let TOKEN_ERROR = "Github OAuth Token is not set for Extra GitHub PR Info extension but 'Show build status' flag is on (visit the extension options to resolve this issue)";
+let TOKEN_ERROR =
+  "Github OAuth Token is not set for Extra GitHub PR Info extension but 'Show build status' flag is on (visit the extension options to resolve this issue)";
 
 featureFlag("Show build status", () => {
   chrome.storage.local.get("config", (container) => {
