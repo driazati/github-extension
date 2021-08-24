@@ -1,12 +1,22 @@
+let removeSkippedSignals = false;
+
 featureFlag("Sort signals", () => {
-  document.addEventListener("DOMContentLoaded", sortSignals);
-  document.addEventListener("pjax:end", sortSignals);
-  // setInterval(sortSignals, 500);
-  backoffInterval({
-    callback: sortSignals,
-    minWait: 10,
-    maxWait: 2000,
-    factor: 2,
+  chrome.storage.local.get("config", (container) => {
+    removeSkippedSignals = container.config["Hide skipped signals"];
+    if (removeSkippedSignals === undefined) {
+      // default if no option saved yet
+      removeSkippedSignals = true;
+    }
+
+    document.addEventListener("DOMContentLoaded", sortSignals);
+    document.addEventListener("pjax:end", sortSignals);
+
+    backoffInterval({
+      callback: sortSignals,
+      minWait: 10,
+      maxWait: 200,
+      factor: 1.05,
+    });
   });
 });
 
@@ -86,6 +96,12 @@ function sortSignalsBox(parent) {
 
   for (let item of order) {
     parent.appendChild(item.element);
+  }
+
+  if (removeSkippedSignals) {
+    for (const item of buckets["skipped"]) {
+      remove(item.element);
+    }
   }
 
   return true;

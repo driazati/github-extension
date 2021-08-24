@@ -13,6 +13,12 @@ let properties = [
     default: true,
   },
   {
+    name: "Hide skipped signals",
+    desc: "Remove skipped jobs from the signals box on PRs",
+    type: "checkbox",
+    default: true,
+  },
+  {
     name: "Show build status",
     desc: "When viewing a list of PRs, show extra information about each (line count, diff, etc)",
     type: "checkbox",
