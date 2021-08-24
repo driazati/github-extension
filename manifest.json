@@ -4,7 +4,7 @@
   "name": "Extra GitHub PR Info",
   "short_name": "Extra GitHub PR Info",
   "description": "Edits to the GitHub UI to make it more informative",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "author": "pytorch",
 
   "icons": {
