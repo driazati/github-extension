@@ -1,42 +1,64 @@
 {
   "manifest_version": 2,
-
   "name": "Extra GitHub PR Info",
   "short_name": "Extra GitHub PR Info",
   "description": "Edits to the GitHub UI to make it more informative",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": "pytorch",
-
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-
   "options_ui": {
     "page": "options.html",
     "chrome_style": true
   },
   "content_scripts": [
     {
-      "matches": ["*://github.com/*/pulls*", "*://github.com/pulls*"],
-      "js": ["lib.js", "show_build_status.js"],
+      "matches": [
+        "*://github.com/*/pulls*",
+        "*://github.com/pulls*"
+      ],
+      "js": [
+        "lib.js",
+        "show_build_status.js"
+      ],
       "run_at": "document_end"
     },
     {
-      "matches": ["*://github.com/*"],
-      "js": ["disable_pjax.js"],
+      "matches": [
+        "*://github.com/*"
+      ],
+      "js": [
+        "disable_pjax.js"
+      ],
       "run_at": "document_end"
     },
     {
-      "matches": ["*://github.com/*/*/pull/*"],
-      "js": ["lib.js", "unminimize_comments.js", "sort_signals.js"],
+      "matches": [
+        "*://github.com/*/*/pull/*",
+        "*://github.com/*/*",
+        "*://github.com/*/*/commits/*"
+      ],
+      "js": [
+        "lib.js",
+        "unminimize_comments.js",
+        "sort_signals.js",
+        "remove_timeline_events.js",
+        "expand_signals_box.js"
+      ],
       "run_at": "document_start"
     }
   ],
   "background": {
-    "scripts": ["remove_cors.js"],
+    "scripts": [
+      "remove_cors.js"
+    ],
     "persistent": true
   },
-  "permissions": ["storage", "https://github.com/*"]
+  "permissions": [
+    "storage",
+    "https://github.com/*"
+  ]
 }
