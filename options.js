@@ -31,6 +31,18 @@ let properties = [
     default: true,
   },
   {
+    name: "Remove timeline events",
+    desc: "Remove timeline events on PRs",
+    type: "checkbox",
+    default: false,
+  },
+  {
+    name: "Expand signals box",
+    desc: "Make the signals box taller",
+    type: "checkbox",
+    default: false,
+  },
+  {
     name: "Disable pjax",
     desc: "Turn off GitHub's SPA features so links aren't stale (may increase load times)",
     type: "checkbox",
