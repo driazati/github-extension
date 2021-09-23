@@ -43,6 +43,18 @@ let properties = [
     default: false,
   },
   {
+    name: "Hide bot comment counts",
+    desc: "Remove bot comments from the count displayed in lists of PRs",
+    type: "checkbox",
+    default: false,
+  },
+  // {
+  //   name: "Sort generated code review blocks",
+  //   desc: "Move auto-collapsed code review blocks to the bottom",
+  //   type: "checkbox",
+  //   default: false,
+  // },
+  {
     name: "Disable pjax",
     desc: "Turn off GitHub's SPA features so links aren't stale (may increase load times)",
     type: "checkbox",

@@ -49,6 +49,16 @@
         "expand_signals_box.js"
       ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://github.com/*/*/pull/*/files"
+      ],
+      "js": [
+        "lib.js",
+        "reorder_code_reviews.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "background": {

@@ -4,6 +4,7 @@
 let GITHUB_OAUTH = undefined;
 let TOKEN_ERROR =
   "Github OAuth Token is not set for Extra GitHub PR Info extension but 'Show build status' flag is on (visit the extension options to resolve this issue)";
+let HIDE_BOT_COMMENT_COUNTS = undefined;
 
 featureFlag("Show build status", () => {
   chrome.storage.local.get("config", (container) => {
@@ -14,6 +15,9 @@ featureFlag("Show build status", () => {
     if (GITHUB_OAUTH === undefined) {
       alert(TOKEN_ERROR);
     }
+
+    HIDE_BOT_COMMENT_COUNTS = container.config["Hide bot comment counts"];
+    console.log("hide", HIDE_BOT_COMMENT_COUNTS)
     build_status_main();
 
     // Re-load the bars when the page is changed
@@ -303,6 +307,42 @@ function add_head_ref(row, pr) {
   small_text_div.appendChild(div);
 }
 
+// Decrement the comment count by known-bot comments, delete if if 0
+function hide_bot_comments(row, pr) {
+  const commentsEl = row.querySelector(
+    "a[aria-label$=comments] > span, a[aria-label$=comment] > span"
+  );
+  if (!commentsEl) {
+    console.error(`Couldn't find comments for ${pr.number}`);
+    return;
+  }
+
+  // Count up the bot comments in the PR by username
+  let numBotComments = 0;
+  const bots = {
+    "facebook-github-bot": true,
+    "pytorch-probot": true,
+    codecov: true,
+  };
+  for (const comment of pr["comments"]["nodes"]) {
+    const login = comment["author"]["login"];
+    if (bots[login]) {
+      numBotComments += 1;
+    }
+  }
+
+  // Get the count from the page
+  const numComments = parseInt(commentsEl.innerText);
+
+  // Set the count of non-bot comments, delete the element if necessary
+  const realComments = numComments - numBotComments;
+  if (realComments === 0) {
+    remove(commentsEl.parentNode);
+  } else {
+    commentsEl.innerText = realComments;
+  }
+}
+
 // Parse the body for a link to a diff and add that if found
 function add_phabricator_diff(row, pr) {
   let small_text_div = row.querySelector("div.mt-1.text-small");
@@ -387,6 +427,10 @@ function build_status_main() {
     add_head_ref(row, pr);
     add_diff_stat(row, pr);
     add_phabricator_diff(row, pr);
+
+    if (HIDE_BOT_COMMENT_COUNTS) {
+      hide_bot_comments(row, pr);
+    }
   }
 
   function pr_id(user, repo, pr) {
@@ -395,7 +439,6 @@ function build_status_main() {
 
   if (window.location.href.includes("github.com/pulls")) {
     // all of a user's prs
-    console.log("idk lol");
     let prs = [];
     let pr_to_row = {};
     for (let i = 0; i < rows.length; i++) {
@@ -420,7 +463,6 @@ function build_status_main() {
           // No data to show
           return;
         }
-        console.log(data);
         let repos = data["data"];
         let prs_and_id = [];
         for (let repo in repos) {
@@ -439,7 +481,6 @@ function build_status_main() {
 
         for (let pr_and_id of prs_and_id) {
           let row = pr_to_row[pr_and_id["id"]];
-          console.log(pr_and_id);
           show_pr_data(pr_and_id["pr"], row);
         }
       },
@@ -552,6 +593,9 @@ function build_graphql_query_for_many_repos(prs) {
     query += "changedFiles" + "\n";
     query += "mergeable" + "\n";
     query += "headRef {\nname\n}" + "\n";
+    if (HIDE_BOT_COMMENT_COUNTS) {
+      query += "comments(first:100) {nodes {author {login} } }\n";
+    }
     query +=
       "commits(last: 1) {nodes {commit {status {contexts {state\ncontext\navatarUrl\n}}}}}" +
       "\n";
@@ -572,7 +616,6 @@ function build_graphql_query_for_many_repos(prs) {
     }
     prs_by_repo_and_user[user][repo].push(pr["num"]);
   }
-  console.log(prs_by_repo_and_user);
 
   let query = "{";
   for (let user in prs_by_repo_and_user) {
@@ -603,6 +646,9 @@ function build_graphql_query(numbers) {
     query += "changedFiles" + "\n";
     query += "mergeable" + "\n";
     query += "headRef {\nname\n}" + "\n";
+    if (HIDE_BOT_COMMENT_COUNTS) {
+      query += "comments(first:100) {nodes {author {login} } }\n";
+    }
     query +=
       "commits(last: 1) {nodes {commit {status {contexts {state\ncontext\navatarUrl\n}}}}}" +
       "\n";
