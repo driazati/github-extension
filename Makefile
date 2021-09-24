@@ -1,2 +1,2 @@
 zip:
-	git ls-files | grep -v 'images/' | xargs zip extension.zip
+	git ls-files | grep -v 'images/' | grep -v '.gitignore' | xargs zip extension.zip

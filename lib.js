@@ -17,6 +17,12 @@ function insert_after(element, toInsert) {
   }
 }
 
+function fromHtml(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return div.children[0];
+}
+
 function build_dropdown(no_default, items, onchange) {
   let select = document.createElement("select");
 

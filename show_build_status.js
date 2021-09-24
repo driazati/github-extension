@@ -17,7 +17,6 @@ featureFlag("Show build status", () => {
     }
 
     HIDE_BOT_COMMENT_COUNTS = container.config["Hide bot comment counts"];
-    console.log("hide", HIDE_BOT_COMMENT_COUNTS)
     build_status_main();
 
     // Re-load the bars when the page is changed
@@ -269,42 +268,55 @@ function add_diff_stat(row, pr) {
   let deletions = parseInt(pr["deletions"]);
   let changedFiles = parseInt(pr["changedFiles"]);
 
-  let div = document.createElement("div");
-  div.style.display = "inline";
-  div.innerHTML = `<span style="color: green">+${additions}</span> / <span style="color: red">-${deletions}</span> (${changedFiles})`;
+  let text = `${changedFiles} files changed with ${additions} added lines and ${deletions} deleted lines`;
 
-  small_text_div.appendChild(div);
+  small_text_div.appendChild(
+    fromHtml(`
+    <div title="${text}" style="display: inline">
+      <span style="color: green">+${additions}</span> / <span style="color: red">-${deletions}</span> (${changedFiles})
+    </div>
+  `)
+  );
 }
 
 // Add an emoji that states whether this PR has merge conflicts
 function add_mergable(row, pr) {
   let small_text_div = row.querySelector("div.mt-1.text-small");
 
-  let div = document.createElement("div");
-  div.style.display = "inline";
-  if (pr["mergeable"] == "MERGEABLE") {
-    div.innerHTML = "✅";
-  } else if (pr["mergeable"] == "CONFLICTING") {
-    div.innerHTML = "❗";
+  let icon = "";
+  if (pr.mergeable == "MERGEABLE") {
+    icon = "✅";
+  } else if (pr.mergeable == "CONFLICTING") {
+    icon = "❗";
   } else {
-    div.innerHTML = "❔";
+    icon = "❔";
   }
 
-  small_text_div.appendChild(div);
+  small_text_div.appendChild(
+    fromHtml(`
+    <div title="Mergability status: ${pr.mergeable}" style="display: inline; margin-left: 2px; margin-right: 2px;">
+      ${icon}
+    </div>
+  `)
+  );
 }
 
 // Add the head ref branch of the pull request
 function add_head_ref(row, pr) {
   let small_text_div = row.querySelector("div.mt-1.text-small");
 
-  let div = document.createElement("div");
-  div.style.display = "inline";
-  div.style["margin-right"] = "8px";
+  let text = "";
   if (pr["headRef"]) {
-    div.innerText = pr["headRef"]["name"];
+    text = pr["headRef"]["name"];
   }
 
-  small_text_div.appendChild(div);
+  small_text_div.appendChild(
+    fromHtml(`
+    <div style="display: inline; margin-right: 8px;">
+      ${text}
+    </div>
+  `)
+  );
 }
 
 // Decrement the comment count by known-bot comments, delete if if 0
