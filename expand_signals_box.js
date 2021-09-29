@@ -12,30 +12,17 @@ featureFlag("Expand signals box", () => {
 
 function expandSignalsBox() {
   let changed = false;
+
   document
     .querySelectorAll(
-      "div.branch-action-item.js-details-container.Details.open"
+      "div.merge-status-list.js-updatable-content-preserve-scroll-position"
     )
     .forEach((item) => {
-      if (item.style.height !== "800px") {
+      if (item.style["max-height"] !== "800px") {
         changed = true;
       }
-      item.style.height = "800px";
+      item.style["max-height"] = "800px";
     });
-
-  document.querySelectorAll("div.merge-status-list").forEach((item) => {
-    if (item.style["max-height"] !== "100%") {
-      changed = true;
-    }
-    item.style["max-height"] = "100%";
-  });
-
-  document.querySelectorAll("div.facehub-import-buttons").forEach((item) => {
-    if (item.style["margin-top"] !== "35px") {
-      changed = true;
-    }
-    item.style["margin-top"] = "35px";
-  });
 
   return changed;
 }
