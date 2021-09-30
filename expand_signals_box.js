@@ -18,10 +18,10 @@ function expandSignalsBox() {
       "div.merge-status-list.js-updatable-content-preserve-scroll-position"
     )
     .forEach((item) => {
-      if (item.style["max-height"] !== "800px") {
+      if (item.style["max-height"] !== "80vh") {
         changed = true;
       }
-      item.style["max-height"] = "800px";
+      item.style["max-height"] = "80vh";
     });
 
   return changed;
