@@ -174,6 +174,58 @@ function add_bucketed_bars(row, pr) {
   // Make bar SVG
   let bar = bucket_bar(bucketed_statuses);
 
+  let failures = [];
+  for (const status of statuses) {
+    if (
+      status.state !== "PENDING" &&
+      status.state !== "SUCCESS" &&
+      status.state !== "SKIPPED"
+    ) {
+      failures.push(status);
+    }
+  }
+
+  const tooltip = fromHtml(`
+    <div style="display: none; padding: 10px; position: absolute; left: 0px; top: 0px; border: 1px solid black; background-color: white;">
+    </div>
+  `);
+
+  const table = document.createElement("table");
+  for (const failure of failures) {
+    let tableRow = document.createElement("tr");
+    const cell = document.createElement("td");
+    const anc = document.createElement("a");
+    const span = document.createElement("span");
+    span.innerText = "x";
+    span.style["margin-right"] = "10px";
+    span.style["font-weight"] = "bold";
+    span.style["color"] = "red";
+    anc.appendChild(span);
+    anc.href = failure.targetUrl;
+    const span2 = document.createElement("span");
+    span2.textContent = failure.context;
+    anc.appendChild(span2);
+    cell.appendChild(anc);
+    tableRow.appendChild(cell);
+    table.appendChild(tableRow);
+  }
+  tooltip.appendChild(table);
+  document.body.appendChild(tooltip);
+
+  bar.onclick = (event) => {
+    console.log("click");
+    if (tooltip.style.display === "block") {
+      tooltip.style.display = "none";
+      console.log("hide");
+      return;
+    }
+    console.log("show");
+
+    tooltip.style.left = `${event.pageX}px`;
+    tooltip.style.top = `${event.pageY}px`;
+    tooltip.style.display = "block";
+  };
+
   // Add SVG to the page
   add_new_bar(row, bar);
 }
@@ -609,7 +661,7 @@ function build_graphql_query_for_many_repos(prs) {
       query += "comments(first:100) {nodes {author {login} } }\n";
     }
     query +=
-      "commits(last: 1) {nodes {commit {status {contexts {state\ncontext\navatarUrl\n}}}}}" +
+      "commits(last: 1) {nodes {commit {status {contexts {state\ncontext\navatarUrl\ntargetUrl\n}}}}}" +
       "\n";
     query += "}";
     return query;
@@ -662,7 +714,7 @@ function build_graphql_query(numbers) {
       query += "comments(first:100) {nodes {author {login} } }\n";
     }
     query +=
-      "commits(last: 1) {nodes {commit {status {contexts {state\ncontext\navatarUrl\n}}}}}" +
+      "commits(last: 1) {nodes {commit {status {contexts {state\ncontext\navatarUrl\ntargetUrl\n}}}}}" +
       "\n";
     query += "}";
     return query;
