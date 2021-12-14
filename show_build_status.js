@@ -321,11 +321,15 @@ function add_diff_stat(row, pr) {
   let changedFiles = parseInt(pr["changedFiles"]);
 
   let text = `${changedFiles} files changed with ${additions} added lines and ${deletions} deleted lines`;
+  const repo = pr.baseRepository;
+  const url = `https://github.com/${repo.owner.login}/${repo.name}/pull/${pr.number}`;
 
   small_text_div.appendChild(
     fromHtml(`
     <div title="${text}" style="display: inline">
+      <a href="${url}">
       <span style="color: green">+${additions}</span> / <span style="color: red">-${deletions}</span> (${changedFiles})
+      </a>
     </div>
   `)
   );
@@ -358,20 +362,24 @@ function add_mergable(row, pr) {
 
 function replace_review_status(row, pr) {
   let small_text_div = row.querySelector("div.mt-1.text-small");
-  console.log(small_text_div)
   const status = small_text_div.children[1];
-  const text = status.querySelector("a").innerText;
+  let link = status.querySelector("a");
+  if (!link) {
+    return;
+  }
+  const text = link.innerText;
   let icon = text;
   if (text == "Draft") {
     icon = "🔜"
   } else if (text == "Review required") {
+    icon = "🔸"
+  } else if (text == "Changes requested") {
     icon = "❌"
   } else if (text == "Approved") {
     icon = "✅"
   }
-  console.log(text)
   if (icon != text) {
-    status.innerHTML = `<span style="margin-left: 4px">${icon}</span>`;
+    status.innerHTML = `<span title="Review status: ${text}" style="margin-left: 4px">${icon}</span>`;
   }
 }
 
@@ -383,13 +391,14 @@ function add_head_ref(row, pr) {
   let text = "";
   if (pr["headRef"]) {
     text = pr["headRef"]["name"];
-  }
+    const repo = pr.headRepository;
+    const url = `https://github.com/${repo.owner.login}/${repo.name}/tree/${pr.headRef.name}`
 
-  small_text_div.appendChild(
-    fromHtml(`
-    <div style="display: inline; margin-right: 8px; margin-left: 6px;">${text}</div>
-  `)
-  );
+    small_text_div.appendChild(
+      fromHtml(`
+      <div style="display: inline; margin-right: 8px; margin-left: 6px; font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace"><a style="color: #616161" href="${url}">${text}</a></div>
+    `));
+  }
 }
 
 // Decrement the comment count by known-bot comments, delete if if 0
@@ -732,6 +741,8 @@ function build_graphql_query(numbers) {
     query += "changedFiles" + "\n";
     query += "mergeable" + "\n";
     query += "headRef {\nname\n}" + "\n";
+    query += "baseRepository {\n name\n owner {\n login } }"
+    query += "headRepository {\n name\n owner {\n login } }"
     if (HIDE_BOT_COMMENT_COUNTS) {
       query += "comments(first:100) {nodes {author {login} } }\n";
     }
@@ -744,9 +755,10 @@ function build_graphql_query(numbers) {
 
   // Parse username + repo from URL
   let url = window.location.href;
-  let result = url.match(/github\.com\/([a-zA-Z0-9]+)\/([a-zA-Z0-9]+)/);
+  let result = url.match(/github\.com\/([a-zA-Z0-9-]+)\/([a-zA-Z0-9-]+)/);
   let user = result[1];
   let repo = result[2];
+  console.log("User", user)
 
   let query = `{ repository(owner: "${user}", name: "${repo}") {`;
   query += pull_requests.join("\n");
