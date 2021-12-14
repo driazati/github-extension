@@ -335,23 +335,46 @@ function add_diff_stat(row, pr) {
 function add_mergable(row, pr) {
   let small_text_div = row.querySelector("div.mt-1.text-small");
 
-  let icon = "";
+  let icon = null;
   if (pr.mergeable == "MERGEABLE") {
-    icon = "✅";
+    // dont show anything if it's merge-able
   } else if (pr.mergeable == "CONFLICTING") {
     icon = "❗";
   } else {
     icon = "❔";
   }
 
-  small_text_div.appendChild(
-    fromHtml(`
-    <div title="Mergability status: ${pr.mergeable}" style="display: inline; margin-left: 2px; margin-right: 2px;">
-      ${icon}
-    </div>
-  `)
-  );
+  if (icon !== null) {
+    small_text_div.appendChild(
+      fromHtml(`
+      <div title="Mergability status: ${pr.mergeable}" style="display: inline; margin-left: 2px; margin-right: 2px;">
+        ${icon}
+      </div>
+    `)
+    );
+
+  }
 }
+
+function replace_review_status(row, pr) {
+  let small_text_div = row.querySelector("div.mt-1.text-small");
+  console.log(small_text_div)
+  const status = small_text_div.children[1];
+  const text = status.querySelector("a").innerText;
+  let icon = text;
+  if (text == "Draft") {
+    icon = "🔜"
+  } else if (text == "Review required") {
+    icon = "❌"
+  } else if (text == "Approved") {
+    icon = "✅"
+  }
+  console.log(text)
+  if (icon != text) {
+    status.innerHTML = `<span style="margin-left: 4px">${icon}</span>`;
+  }
+}
+
 
 // Add the head ref branch of the pull request
 function add_head_ref(row, pr) {
@@ -364,9 +387,7 @@ function add_head_ref(row, pr) {
 
   small_text_div.appendChild(
     fromHtml(`
-    <div style="display: inline; margin-right: 8px;">
-      ${text}
-    </div>
+    <div style="display: inline; margin-right: 8px; margin-left: 6px;">${text}</div>
   `)
   );
 }
@@ -489,6 +510,7 @@ function build_status_main() {
     // Add some extra info about the PR
     add_mergable(row, pr);
     add_head_ref(row, pr);
+    replace_review_status(row, pr);
     add_diff_stat(row, pr);
     add_phabricator_diff(row, pr);
 
@@ -736,7 +758,7 @@ function remove(element) {
   if (element && element.parentNode) {
     try {
       element.parentNode.removeChild(element);
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
