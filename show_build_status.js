@@ -79,12 +79,16 @@ function clear_bars(row) {
 
 // Using a row element and a GraphQL response for a pull request, add progress
 // bars bucketed by categories of CI jobs
-function add_bucketed_bars(row, pr) {
-  let status = pr["commits"]["nodes"][0]["commit"]["status"];
-  if (!status) {
-    // No status found in response, so we can't do anything
-    return;
-  }
+function add_bucketed_bars(row, pr, statuses) {
+  // if (pr.number != 9769) {
+  //   return;
+  // }
+  // console.log(statuses);
+  // let status = pr["commits"]["nodes"][0]["commit"]["status"];
+  // if (!status) {
+  //   // No status found in response, so we can't do anything
+  //   return;
+  // }
 
   // Total size of bar
   let total_width = 100;
@@ -92,7 +96,7 @@ function add_bucketed_bars(row, pr) {
   // it too small to see
   let min_width = 10;
 
-  let statuses = status["contexts"];
+  // let statuses = status["contexts"];
 
   // Set up known buckets to put PRs in
   // TODO: do this by avatar image or something instead of manually
@@ -112,12 +116,12 @@ function add_bucketed_bars(row, pr) {
   };
 
   statuses.forEach((item) => {
-    if (ignored_job_names[item["context"]]) {
+    if (ignored_job_names[item.name]) {
       // Skip ignored items
       return;
     }
     for (let [bucket_name, bucket] of bucketed_statuses) {
-      if (item.context.startsWith(bucket_name)) {
+      if (item.name.startsWith(bucket_name)) {
         bucket.items.push(item);
         if (bucket.avatar === "") {
           bucket.avatar = item.avatarUrl;
@@ -160,11 +164,11 @@ function add_bucketed_bars(row, pr) {
   for (let [bucket_name, bucket] of bucketed_statuses) {
     bucket.progress = {
       good: bucket.items.reduce(
-        (pre, curr) => (curr.state === "SUCCESS" ? ++pre : pre),
+        (pre, curr) => (curr.status === "SUCCESS" ? ++pre : pre),
         0
       ),
       pending: bucket.items.reduce(
-        (pre, curr) => (curr.state === "PENDING" ? ++pre : pre),
+        (pre, curr) => (curr.status === "PENDING" ? ++pre : pre),
         0
       ),
       total: bucket.items.length,
@@ -177,9 +181,9 @@ function add_bucketed_bars(row, pr) {
   let failures = [];
   for (const status of statuses) {
     if (
-      status.state !== "PENDING" &&
-      status.state !== "SUCCESS" &&
-      status.state !== "SKIPPED"
+      status.status !== "PENDING" &&
+      status.status !== "SUCCESS" &&
+      status.status !== "SKIPPED"
     ) {
       failures.push(status);
     }
@@ -201,11 +205,21 @@ function add_bucketed_bars(row, pr) {
     span.style["font-weight"] = "bold";
     span.style["color"] = "red";
     anc.appendChild(span);
-    anc.href = failure.targetUrl;
+    anc.href = failure.url;
     const span2 = document.createElement("span");
-    span2.textContent = failure.context;
+    span2.textContent = failure.name;
     anc.appendChild(span2);
     cell.appendChild(anc);
+    tableRow.appendChild(cell);
+    table.appendChild(tableRow);
+  }
+  if (failures.length === 0) {
+    let tableRow = document.createElement("tr");
+    const cell = document.createElement("td");
+    const span = document.createElement("span");
+    span.innerText = "no failures!";
+    span.style["margin-right"] = "10px";
+    cell.appendChild(span);
     tableRow.appendChild(cell);
     table.appendChild(tableRow);
   }
@@ -213,13 +227,10 @@ function add_bucketed_bars(row, pr) {
   document.body.appendChild(tooltip);
 
   bar.onclick = (event) => {
-    console.log("click");
     if (tooltip.style.display === "block") {
       tooltip.style.display = "none";
-      console.log("hide");
       return;
     }
-    console.log("show");
 
     tooltip.style.left = `${event.pageX}px`;
     tooltip.style.top = `${event.pageY}px`;
@@ -322,7 +333,7 @@ function add_diff_stat(row, pr) {
 
   let text = `${changedFiles} files changed with ${additions} added lines and ${deletions} deleted lines`;
   const repo = pr.baseRepository;
-  const url = `https://github.com/${repo.owner.login}/${repo.name}/pull/${pr.number}`;
+  const url = `https://github.com/${repo.owner.login}/${repo.name}/pull/${pr.number}/files`;
 
   small_text_div.appendChild(
     fromHtml(`
@@ -356,7 +367,6 @@ function add_mergable(row, pr) {
       </div>
     `)
     );
-
   }
 }
 
@@ -370,19 +380,18 @@ function replace_review_status(row, pr) {
   const text = link.innerText;
   let icon = text;
   if (text == "Draft") {
-    icon = "🔜"
+    icon = "🔜";
   } else if (text == "Review required") {
-    icon = "🔸"
+    icon = "🔸";
   } else if (text == "Changes requested") {
-    icon = "❌"
+    icon = "❌";
   } else if (text == "Approved") {
-    icon = "✅"
+    icon = "✅";
   }
   if (icon != text) {
     status.innerHTML = `<span title="Review status: ${text}" style="margin-left: 4px">${icon}</span>`;
   }
 }
-
 
 // Add the head ref branch of the pull request
 function add_head_ref(row, pr) {
@@ -392,12 +401,13 @@ function add_head_ref(row, pr) {
   if (pr["headRef"]) {
     text = pr["headRef"]["name"];
     const repo = pr.headRepository;
-    const url = `https://github.com/${repo.owner.login}/${repo.name}/tree/${pr.headRef.name}`
+    const url = `https://github.com/${repo.owner.login}/${repo.name}/tree/${pr.headRef.name}`;
 
     small_text_div.appendChild(
       fromHtml(`
       <div style="display: inline; margin-right: 8px; margin-left: 6px; font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace"><a style="color: #616161" href="${url}">${text}</a></div>
-    `));
+    `)
+    );
   }
 }
 
@@ -456,6 +466,28 @@ function add_phabricator_diff(row, pr) {
   small_text_div.appendChild(a);
 }
 
+function mergeGHAandStatuses(rollup) {
+  return rollup.contexts.nodes.map((x) => {
+    if (x.__typename == "CheckRun") {
+      let status = x.conclusion;
+      if (x.conclusion === null) {
+        status = "PENDING";
+      }
+      return {
+        name: `${x.name}`,
+        status: status,
+        url: x.url,
+      };
+    } else {
+      return {
+        name: x.context,
+        status: x.state,
+        url: x.targetUrl,
+      };
+    }
+  });
+}
+
 function build_status_main() {
   let rows = document.querySelectorAll(".js-issue-row");
   let builds = document.querySelectorAll(".commit-build-statuses a");
@@ -466,6 +498,7 @@ function build_status_main() {
   }
 
   for (let i = 0; i < rows.length; ++i) {
+    continue;
     let build = rows[i].querySelector(".commit-build-statuses a");
     if (!build) {
       continue;
@@ -487,7 +520,7 @@ function build_status_main() {
 
     if (progress.total > 0) {
       // Don't try to add a bar if there are no builds
-      add_basic_bar(rows[i], progress, 100);
+      // add_basic_bar(rows[i], progress, 100);
     }
 
     // Make labels more pastel in color
@@ -514,6 +547,12 @@ function build_status_main() {
       // If we got some new data, use that to make new bucketed bars
       clear_bars(row);
       add_bucketed_bars(row, pr);
+    }
+    if (pr.commits.nodes[0].commit.statusCheckRollup) {
+      const rollup = pr.commits.nodes[0].commit.statusCheckRollup;
+      const statuses = mergeGHAandStatuses(rollup);
+      clear_bars(row);
+      add_bucketed_bars(row, pr, statuses);
     }
 
     // Add some extra info about the PR
@@ -741,14 +780,43 @@ function build_graphql_query(numbers) {
     query += "changedFiles" + "\n";
     query += "mergeable" + "\n";
     query += "headRef {\nname\n}" + "\n";
-    query += "baseRepository {\n name\n owner {\n login } }"
-    query += "headRepository {\n name\n owner {\n login } }"
+    query += "baseRepository {\n name\n owner {\n login } }";
+    query += "headRepository {\n name\n owner {\n login } }";
     if (HIDE_BOT_COMMENT_COUNTS) {
       query += "comments(first:100) {nodes {author {login} } }\n";
     }
-    query +=
-      "commits(last: 1) {nodes {commit {status {contexts {state\ncontext\navatarUrl\ntargetUrl\n}}}}}" +
-      "\n";
+    // query +=
+    //   "commits(last: 1) {nodes {commit {status {contexts {state\ncontext\navatarUrl\ntargetUrl\n}}}}}" +
+    //   "\n";
+
+    query += `
+    commits(last: 1) { nodes { commit {
+      statusCheckRollup {
+        contexts(last:100) {
+          nodes {
+            __typename
+            ... on CheckRun {
+              name
+              conclusion
+              url
+              checkSuite {
+                workflowRun {
+                  workflow {
+                    name
+                  }
+                }
+              }
+            }
+            ... on StatusContext {
+              context
+              state
+              targetUrl
+            }
+          }
+        }
+      }
+    }}}   
+    `;
     query += "}";
     return query;
   });
@@ -758,7 +826,6 @@ function build_graphql_query(numbers) {
   let result = url.match(/github\.com\/([a-zA-Z0-9-]+)\/([a-zA-Z0-9-]+)/);
   let user = result[1];
   let repo = result[2];
-  console.log("User", user)
 
   let query = `{ repository(owner: "${user}", name: "${repo}") {`;
   query += pull_requests.join("\n");
@@ -770,7 +837,7 @@ function remove(element) {
   if (element && element.parentNode) {
     try {
       element.parentNode.removeChild(element);
-    } catch (e) { }
+    } catch (e) {}
   }
 }
 
