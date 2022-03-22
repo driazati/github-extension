@@ -113,7 +113,10 @@ function add_bucketed_bars(row, pr, statuses) {
   // Ignore _dr.ci since it's always a failure...
   let ignored_job_names = {
     "_dr.ci": true,
+    "cc-reviewers": true,
   };
+
+  statuses = statuses.filter(x => x.status !== "CANCELLED");
 
   statuses.forEach((item) => {
     if (ignored_job_names[item.name]) {
@@ -179,13 +182,17 @@ function add_bucketed_bars(row, pr, statuses) {
   let bar = bucket_bar(bucketed_statuses);
 
   let failures = [];
+  let others = [];
   for (const status of statuses) {
     if (
       status.status !== "PENDING" &&
       status.status !== "SUCCESS" &&
+      status.status !== "CANCELLED" &&
       status.status !== "SKIPPED"
     ) {
       failures.push(status);
+    } else {
+      others.push(status);
     }
   }
 
@@ -193,6 +200,10 @@ function add_bucketed_bars(row, pr, statuses) {
     <div style="display: none; padding: 10px; position: absolute; left: 0px; top: 0px; border: 1px solid black; background-color: white;">
     </div>
   `);
+  let red = "#cb2431";
+  let yellow = "#dbab09";
+  let green = "rgb(30, 206, 71)";
+  let black = "rgb(0, 0, 0)";
 
   const table = document.createElement("table");
   for (const failure of failures) {
@@ -203,7 +214,7 @@ function add_bucketed_bars(row, pr, statuses) {
     span.innerText = "x";
     span.style["margin-right"] = "10px";
     span.style["font-weight"] = "bold";
-    span.style["color"] = "red";
+    span.style["color"] = red;
     anc.appendChild(span);
     anc.href = failure.url;
     const span2 = document.createElement("span");
@@ -220,6 +231,33 @@ function add_bucketed_bars(row, pr, statuses) {
     span.innerText = "no failures!";
     span.style["margin-right"] = "10px";
     cell.appendChild(span);
+    tableRow.appendChild(cell);
+    table.appendChild(tableRow);
+  }
+  for (const other of others) {
+    let tableRow = document.createElement("tr");
+    const cell = document.createElement("td");
+    const anc = document.createElement("a");
+    const span = document.createElement("span");
+    if (other.status === "PENDING") {
+      span.innerText = "p";
+      span.style.color = yellow;
+    } else if (other.status === "CANCELLED") {
+      span.innerText = "-";
+      span.style.color = "grey";
+    } else if (other.status === "SUCCESS") {
+      span.innerText = "✓";
+      span.style.color = green;
+    }
+    span.style["margin-right"] = "10px";
+    span.style["font-weight"] = "bold";
+    // span.style["color"] = "red";
+    anc.appendChild(span);
+    anc.href = other.url;
+    const span2 = document.createElement("span");
+    span2.textContent = other.name;
+    anc.appendChild(span2);
+    cell.appendChild(anc);
     tableRow.appendChild(cell);
     table.appendChild(tableRow);
   }
@@ -729,6 +767,9 @@ function fetch_statuses(numbers, callback) {
   status_request(url, {
     body: JSON.stringify({ query }),
     success: callback,
+    error: () => {
+      console.error("[github PR info] Error fetching data");
+    },
   });
 }
 
